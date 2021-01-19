@@ -36,7 +36,47 @@ def be_verbose(message):
     # Print the string if we are in verbose mode
     if being_verbose:
         print(message)
- 
+
+def duplicated_elements_in_categories(dry=True, fix=False):
+    # Search all categories and list if any has
+    #  duplicated category options
+    metadata = api_caller('categories.json?fields=id,categoryOptions')
+    categories = metadata['categories']
+    duplicated_categories = []
+    for category in categories:
+        # co = categoryOptions
+        cos = category['categoryOptions']
+        duplicated_cos = []
+        unique_cos = []
+        for co in cos:
+            if co['id'] in unique_cos:
+                # Found a duplicated categoryOption in the category
+                # ... this is really BAD
+                duplicated_cos.append(co['id'])
+            else:
+                unique_cos.append(co['id'])
+        # If duplicates were found list them
+        if(len(duplicated_cos) > 0):
+            duplicated_categories.append(category['id'])
+        else:
+            msg = "Category: {} was inspected and no duplicates were found".format(category['id'])
+            be_verbose(msg)
+    
+    if len(duplicated_categories) > 0:
+        print ("ERROR: The following categories contain duplicates. Please verify!")
+        print ("Categories: {}".format(','.join(duplicated_categories)))
+        print ("Probably you want to execute the following call to get more information")
+        print ('{}/metadata.json?filter=id:in:[{}]'
+                .format(api_url,','.join(duplicated_categories)))
+            
+
+def duplicated_elements_in_all(dry=True, fix=False):
+    # Verify there are no duplicates elements inside all the elements
+    #  i.e. a Category imported wrongly can have the same category
+    #       option several times
+    #
+    duplicated_elements_in_categories(dry, fix)
+
 
 def duplicated_UID(dry=True, fix=False):
     # Verify that there are no duplicated UIDs in the System. This will cause
@@ -84,7 +124,9 @@ def duplicated_UID(dry=True, fix=False):
 def api_caller(api_call):
     # Perfrom an API call and return a dict with the content for valid requests
     # or false whenever there is an error with the reuqest (code != 200)
-    api_request = '{}/{}'.format(api_url, api_call)
+
+    # Always make paging = False
+    api_request = '{}/{}&paging=False'.format(api_url, api_call)
     be_verbose("Querying the API: "+api_request)
 
     try:
@@ -118,6 +160,7 @@ def main():
     usr = args.username
     pwd = args.password
     duplicated_UID(True, False)
+    duplicated_elements_in_all(True, False)
  
  
 if __name__ == "__main__":
