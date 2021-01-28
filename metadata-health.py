@@ -37,7 +37,10 @@ def be_verbose(message):
     if being_verbose:
         print(message)
 
-def duplicated_elements_in_categories(dry=True, fix=False):
+def duplicated_categoryOptionCombos_in_categoryCombos(dry=True, fix=False):
+    pass
+
+def duplicated_categoryOptions_in_categories(dry=True, fix=False):
     # Search all categories and list if any has
     #  duplicated category options
     metadata = api_caller('categories.json?fields=id,categoryOptions')
@@ -68,6 +71,9 @@ def duplicated_elements_in_categories(dry=True, fix=False):
         print ("Probably you want to execute the following call to get more information")
         print ('{}/metadata.json?filter=id:in:[{}]'
                 .format(api_url,','.join(duplicated_categories)))
+    else:
+        print ("Did not find duplicated categoryOptions in categories!")
+
             
 
 def duplicated_elements_in_all(dry=True, fix=False):
@@ -75,7 +81,7 @@ def duplicated_elements_in_all(dry=True, fix=False):
     #  i.e. a Category imported wrongly can have the same category
     #       option several times
     #
-    duplicated_elements_in_categories(dry, fix)
+    duplicated_categoryOptions_in_categories(dry, fix)
 
 
 def duplicated_UID(dry=True, fix=False):
