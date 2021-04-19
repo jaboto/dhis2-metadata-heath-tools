@@ -37,6 +37,74 @@ def be_verbose(message):
     if being_verbose:
         print(message)
 
+def duplicated_dataElements_in_sections(dry=True, fix=False):
+    # List all the sections and list if any
+    #  has duplicated data elements inside
+    metadata = api_caller('sections.json?fields=id,dataElements')
+    sections = metadata['sections']
+    sections_with_duplicated_dataelements = []
+    for section in sections:
+        duplicated_dataelements = []
+        unique_dataelements = []
+        for dataElement in section['dataElements']:
+            if dataElement['id'] in unique_dataelements:
+                # Found a duplicated DE in the DataSet
+                # ... this is not good!
+                duplicated_dataelements.append(dataElement['id'])
+            else:
+                unique_dataelements.append(dataElement['id'])
+        
+        if len(duplicated_dataelements) > 0:
+            sections_with_duplicated_dataelements.append(section['id'])
+        else:
+            msg = "Section: {} was inspected and no duplicated data elements were found".format(section['id'])
+            be_verbose(msg)
+
+
+    if len(sections_with_duplicated_dataelements) > 0:
+        print ("ERROR: The following dataSets contain duplicates. Please verify!")
+        print ("DataSets: {}".format(','.join(sections_with_duplicated_dataelements)))
+        print ("Probably you want to execute the following call to get more information")
+        print ('{}/metadata.json?filter=id:in:[{}]'
+                .format(api_url,','.join(sections_with_duplicated_dataelements)))
+    else:
+        print ("Did not find duplicated dataelements in sections!")
+
+
+def duplicated_dataElements_in_dataSets(dry=True, fix=False):
+    # List all the datasets and list if any
+    #  has duplicated data elements inside
+    metadata = api_caller('dataSets.json?fields=id,dataSetElements')
+    dataSets = metadata['dataSets']
+    datasets_with_duplicated_dataelements = []
+    for dataSet in dataSets:
+        duplicated_dataelements = []
+        unique_dataelements = []
+        for dataElement in dataSet['dataSetElements']:
+            if dataElement['dataElement']['id'] in unique_dataelements:
+                # Found a duplicated DE in the DataSet
+                # ... this is not good!
+                duplicated_dataelements.append(dataElement['dataElement']['id'])
+            else:
+                unique_dataelements.append(dataElement['dataElement']['id'])
+        
+        if len(duplicated_dataelements) > 0:
+            datasets_with_duplicated_dataelements.append(dataSet['id'])
+        else:
+            msg = "DataSet: {} was inspected and no duplicated data elements were found".format(dataSet['id'])
+            be_verbose(msg)
+
+
+    if len(datasets_with_duplicated_dataelements) > 0:
+        print ("ERROR: The following dataSets contain duplicates. Please verify!")
+        print ("DataSets: {}".format(','.join(datasets_with_duplicated_dataelements)))
+        print ("Probably you want to execute the following call to get more information")
+        print ('{}/metadata.json?filter=id:in:[{}]'
+                .format(api_url,','.join(datasets_with_duplicated_dataelements)))
+    else:
+        print ("Did not find duplicated dataelements in datasets!")
+
+
 def duplicated_categoryOptionCombos_in_categoryCombos(dry=True, fix=False):
     pass
 
@@ -97,6 +165,10 @@ def duplicated_UID(dry=True, fix=False):
     # Available Fix:
     #       Not available, the user should manually modify the UID 
     metadata = api_caller('metadata.json?fields=id')
+    if metadata == False:
+        print ("Cannot check for duplicated_UID. Server responded badly!")
+        return False
+
     # Metadata contains the information about the server which won't be needed
     metadata['system'] = []
     ids = []
@@ -141,8 +213,10 @@ def api_caller(api_call):
             return json.loads(r.content)
         elif r.status_code == 404:
             print("Error 404")
+            return False
         else:
             print("Error UNKNOWN")
+            return False
     except Exception as e:
         error_msg = "There was a problem with the API call: \n{}\n  \
                     Please verify the error:\n{}".format(api_request, e)
@@ -167,6 +241,8 @@ def main():
     pwd = args.password
     duplicated_UID(True, False)
     duplicated_elements_in_all(True, False)
+    duplicated_dataElements_in_dataSets(True, False)
+    duplicated_dataElements_in_sections(True, False)
  
  
 if __name__ == "__main__":
